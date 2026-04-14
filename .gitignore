@@ -1,0 +1,19 @@
+# Compilación
+bin/
+obj/
+
+# Visual Studio
+.vs/
+.vscode/
+
+# Usuario
+*.user
+*.suo
+
+# Archivos generados
+*.dll
+*.exe
+*.pdb
+
+# Otros
+node_modules/
