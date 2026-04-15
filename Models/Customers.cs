@@ -8,6 +8,7 @@ namespace ConsolePhoneStore.Models
     public class Customer
     {
         // Propiedades del cliente
+        public static int nextId = 1;
         public int Id { get; set; }
         public string Name { get; set; }
         public string Email { get; set; }
@@ -24,6 +25,7 @@ namespace ConsolePhoneStore.Models
         [JsonConstructor]
         public Customer(int id, string name, string email, string password, string role = "CLIENT")
         {
+            id = nextId++;
             // Validar que el nombre no esté vacío y tenga máximo 10 caracteres
             if (string.IsNullOrWhiteSpace(name) || name.Length > 10)
                 throw new ArgumentException("El nombre es obligatorio y máximo 10 caracteres");
@@ -33,7 +35,7 @@ namespace ConsolePhoneStore.Models
                 throw new ArgumentException("Email no válido");
 
             // Validar que la contraseña tenga al menos 6 caracteres
-            if (string.IsNullOrWhiteSpace(password) || password.Length < 6)
+            if (string.IsNullOrWhiteSpace(password) || password.Length < 5)
                 throw new ArgumentException("La contraseña debe tener al menos 6 caracteres");
 
             // Asignar los valores a las propiedades

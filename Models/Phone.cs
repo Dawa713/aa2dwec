@@ -9,6 +9,7 @@ namespace ConsolePhoneStore.Models
     public class Phone
     {
         // Propiedades del teléfono
+        public static int nextId = 1;
         public int Id { get; set; }
         public string Brand { get; set; }
         public string Model { get; set; }
@@ -26,6 +27,7 @@ namespace ConsolePhoneStore.Models
         [JsonConstructor]
         public Phone(int id, string brand, string model, decimal price, int stock)
         {
+            id = nextId++;
             // Validar que el precio sea válido (mayor que 0)
             if (price <= 0)
                 throw new ArgumentOutOfRangeException("El precio debe ser mayor que 0");
