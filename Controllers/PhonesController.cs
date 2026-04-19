@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using ConsolePhoneStore.Models;
+using ConsolePhoneStore.Services;
+using ConsolePhoneStore.DTOs;
+using AutoMapper;
 
 namespace ConsolePhoneStore.Controllers
 {
@@ -7,68 +10,79 @@ namespace ConsolePhoneStore.Controllers
     [Route("api/[controller]")]
     public class PhonesController : ControllerBase
     {
-        // Almacenamiento temporal en memoria (en producción sería una BD)
-        private static List<Phone> phones = new()
+        // Inyección de dependencias: El servicio se inyecta a través del constructor
+        private readonly IPhoneRepository _phoneRepository;
+        private readonly IMapper _mapper;
+
+        public PhonesController(IPhoneRepository phoneRepository, IMapper mapper)
         {
-            new Phone(1, "Apple", "iPhone 15", 999.99m, 50),
-            new Phone(2, "Samsung", "Galaxy S24", 899.99m, 40),
-            new Phone(3, "Google", "Pixel 8", 799.99m, 30)
-        };
+            _phoneRepository = phoneRepository;
+            _mapper = mapper;
+        }
 
         /// <summary>
         /// GET: api/phones - Obtiene todos los teléfonos
         /// </summary>
         [HttpGet]
-        public ActionResult<IEnumerable<Phone>> GetAllPhones()
+        public ActionResult<IEnumerable<PhoneDTO>> GetAllPhones()
         {
-            return Ok(phones.Where(p => p.IsActive).ToList());
+            var phones = _phoneRepository.GetAllActive();
+            // Mapear Phone a PhoneDTO
+            var phonesDTO = _mapper.Map<IEnumerable<PhoneDTO>>(phones);
+            return Ok(phonesDTO);
         }
 
         /// <summary>
         /// GET: api/phones/{id} - Obtiene un teléfono por ID
         /// </summary>
         [HttpGet("{id}")]
-        public ActionResult<Phone> GetPhoneById(int id)
+        public ActionResult<PhoneDTO> GetPhoneById(int id)
         {
-            var phone = phones.FirstOrDefault(p => p.Id == id && p.IsActive);
+            var phone = _phoneRepository.GetById(id);
             if (phone == null)
                 return NotFound(new { message = $"Teléfono con ID {id} no encontrado" });
 
-            return Ok(phone);
+            // Mapear Phone a PhoneDTO
+            var phoneDTO = _mapper.Map<PhoneDTO>(phone);
+            return Ok(phoneDTO);
         }
 
         /// <summary>
         /// POST: api/phones - Crea un nuevo teléfono
         /// </summary>
         [HttpPost]
-        public ActionResult<Phone> CreatePhone([FromBody] Phone phone)
+        public ActionResult<PhoneDTO> CreatePhone([FromBody] CreateUpdatePhoneDTO phoneDTO)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            // Asignar nuevo ID
-            phone.Id = phones.Max(p => p.Id) + 1;
-            phones.Add(phone);
+            // Mapear DTO a Phone
+            var phone = _mapper.Map<Phone>(phoneDTO);
+            _phoneRepository.Add(phone);
 
-            return CreatedAtAction(nameof(GetPhoneById), new { id = phone.Id }, phone);
+            // Mapear el phone creado a PhoneDTO para la respuesta
+            var responseDTO = _mapper.Map<PhoneDTO>(phone);
+            return CreatedAtAction(nameof(GetPhoneById), new { id = phone.Id }, responseDTO);
         }
 
         /// <summary>
         /// PUT: api/phones/{id} - Actualiza un teléfono
         /// </summary>
         [HttpPut("{id}")]
-        public IActionResult UpdatePhone(int id, [FromBody] Phone phoneUpdate)
+        public IActionResult UpdatePhone(int id, [FromBody] CreateUpdatePhoneDTO phoneUpdateDTO)
         {
-            var phone = phones.FirstOrDefault(p => p.Id == id && p.IsActive);
+            var phone = _phoneRepository.GetById(id);
             if (phone == null)
                 return NotFound(new { message = $"Teléfono con ID {id} no encontrado" });
 
-            phone.Brand = phoneUpdate.Brand ?? phone.Brand;
-            phone.Model = phoneUpdate.Model ?? phone.Model;
-            phone.Price = phoneUpdate.Price > 0 ? phoneUpdate.Price : phone.Price;
-            phone.Stock = phoneUpdate.Stock >= 0 ? phoneUpdate.Stock : phone.Stock;
+            // Mapear DTO a Phone para la actualización
+            _mapper.Map(phoneUpdateDTO, phone);
+            _phoneRepository.Update(id, phone);
 
-            return Ok(new { message = "Teléfono actualizado correctamente", data = phone });
+            var updatedPhone = _phoneRepository.GetById(id);
+            var responseDTO = _mapper.Map<PhoneDTO>(updatedPhone);
+
+            return Ok(new { message = "Teléfono actualizado correctamente", data = responseDTO });
         }
 
         /// <summary>
@@ -77,11 +91,11 @@ namespace ConsolePhoneStore.Controllers
         [HttpDelete("{id}")]
         public IActionResult DeletePhone(int id)
         {
-            var phone = phones.FirstOrDefault(p => p.Id == id && p.IsActive);
+            var phone = _phoneRepository.GetById(id);
             if (phone == null)
                 return NotFound(new { message = $"Teléfono con ID {id} no encontrado" });
 
-            phone.IsActive = false;
+            _phoneRepository.Delete(id);
             return Ok(new { message = "Teléfono eliminado correctamente" });
         }
 
@@ -89,23 +103,29 @@ namespace ConsolePhoneStore.Controllers
         /// GET: api/phones/search/byBrand?brand=Apple - Busca teléfonos por marca
         /// </summary>
         [HttpGet("search/byBrand")]
-        public ActionResult<IEnumerable<Phone>> SearchByBrand([FromQuery] string brand)
+        public ActionResult<IEnumerable<PhoneDTO>> SearchByBrand([FromQuery] string brand)
         {
             if (string.IsNullOrWhiteSpace(brand))
                 return BadRequest(new { message = "La marca es requerida" });
 
-            var result = phones.Where(p => p.IsActive && p.Brand.Contains(brand, StringComparison.OrdinalIgnoreCase)).ToList();
-            return Ok(result);
+            var result = _phoneRepository.GetAllActive()
+                .Where(p => p.Brand.Contains(brand, StringComparison.OrdinalIgnoreCase)).ToList();
+            // Mapear resultados a DTOs
+            var resultDTO = _mapper.Map<IEnumerable<PhoneDTO>>(result);
+            return Ok(resultDTO);
         }
 
         /// <summary>
         /// GET: api/phones/search/byPrice?minPrice=500&maxPrice=1000 - Busca por rango de precio
         /// </summary>
         [HttpGet("search/byPrice")]
-        public ActionResult<IEnumerable<Phone>> SearchByPrice([FromQuery] decimal minPrice = 0, [FromQuery] decimal maxPrice = decimal.MaxValue)
+        public ActionResult<IEnumerable<PhoneDTO>> SearchByPrice([FromQuery] decimal minPrice = 0, [FromQuery] decimal maxPrice = decimal.MaxValue)
         {
-            var result = phones.Where(p => p.IsActive && p.Price >= minPrice && p.Price <= maxPrice).ToList();
-            return Ok(result);
+            var result = _phoneRepository.GetAllActive()
+                .Where(p => p.Price >= minPrice && p.Price <= maxPrice).ToList();
+            // Mapear resultados a DTOs
+            var resultDTO = _mapper.Map<IEnumerable<PhoneDTO>>(result);
+            return Ok(resultDTO);
         }
     }
 }

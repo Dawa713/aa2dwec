@@ -1,5 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using ConsolePhoneStore.Models;
+using ConsolePhoneStore.Services;
+using ConsolePhoneStore.DTOs;
+using AutoMapper;
 
 namespace ConsolePhoneStore.Controllers
 {
@@ -7,67 +10,79 @@ namespace ConsolePhoneStore.Controllers
     [Route("api/[controller]")]
     public class CustomersController : ControllerBase
     {
-        // Almacenamiento temporal en memoria (en producción sería una BD)
-        private static List<Customer> customers = new()
+        // Inyección de dependencias: El servicio se inyecta a través del constructor
+        private readonly ICustomerRepository _customerRepository;
+        private readonly IMapper _mapper;
+
+        public CustomersController(ICustomerRepository customerRepository, IMapper mapper)
         {
-            new Customer(1, "Juan", "juan@email.com", "password123", "ADMIN"),
-            new Customer(2, "Maria", "maria@email.com", "pass1234", "CLIENT")
-        };
+            _customerRepository = customerRepository;
+            _mapper = mapper;
+        }
 
         /// <summary>
         /// GET: api/customers - Obtiene todos los clientes
         /// </summary>
         [HttpGet]
-        public ActionResult<IEnumerable<Customer>> GetAllCustomers()
+        public ActionResult<IEnumerable<CustomerDTO>> GetAllCustomers()
         {
-            return Ok(customers.Where(c => c.IsActive).ToList());
+            var customers = _customerRepository.GetAllActive();
+            // Mapear Customer a CustomerDTO (no expone el Password)
+            var customersDTO = _mapper.Map<IEnumerable<CustomerDTO>>(customers);
+            return Ok(customersDTO);
         }
 
         /// <summary>
         /// GET: api/customers/{id} - Obtiene un cliente por ID
         /// </summary>
         [HttpGet("{id}")]
-        public ActionResult<Customer> GetCustomerById(int id)
+        public ActionResult<CustomerDTO> GetCustomerById(int id)
         {
-            var customer = customers.FirstOrDefault(c => c.Id == id && c.IsActive);
+            var customer = _customerRepository.GetById(id);
             if (customer == null)
                 return NotFound(new { message = $"Cliente con ID {id} no encontrado" });
 
-            return Ok(customer);
+            // Mapear Customer a CustomerDTO
+            var customerDTO = _mapper.Map<CustomerDTO>(customer);
+            return Ok(customerDTO);
         }
 
         /// <summary>
         /// POST: api/customers - Crea un nuevo cliente
         /// </summary>
         [HttpPost]
-        public ActionResult<Customer> CreateCustomer([FromBody] Customer customer)
+        public ActionResult<CustomerDTO> CreateCustomer([FromBody] CreateUpdateCustomerDTO customerDTO)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            // Asignar nuevo ID
-            customer.Id = customers.Max(c => c.Id) + 1;
-            customers.Add(customer);
+            // Mapear DTO a Customer
+            var customer = _mapper.Map<Customer>(customerDTO);
+            _customerRepository.Add(customer);
 
-            return CreatedAtAction(nameof(GetCustomerById), new { id = customer.Id }, customer);
+            // Mapear el customer creado a CustomerDTO para la respuesta
+            var responseDTO = _mapper.Map<CustomerDTO>(customer);
+            return CreatedAtAction(nameof(GetCustomerById), new { id = customer.Id }, responseDTO);
         }
 
         /// <summary>
         /// PUT: api/customers/{id} - Actualiza un cliente
         /// </summary>
         [HttpPut("{id}")]
-        public IActionResult UpdateCustomer(int id, [FromBody] Customer customerUpdate)
+        public IActionResult UpdateCustomer(int id, [FromBody] CreateUpdateCustomerDTO customerUpdateDTO)
         {
-            var customer = customers.FirstOrDefault(c => c.Id == id && c.IsActive);
+            var customer = _customerRepository.GetById(id);
             if (customer == null)
                 return NotFound(new { message = $"Cliente con ID {id} no encontrado" });
 
-            customer.Name = customerUpdate.Name ?? customer.Name;
-            customer.Email = customerUpdate.Email ?? customer.Email;
-            customer.Password = customerUpdate.Password ?? customer.Password;
-            customer.Role = customerUpdate.Role ?? customer.Role;
+            // Mapear DTO a Customer para la actualización
+            _mapper.Map(customerUpdateDTO, customer);
+            _customerRepository.Update(id, customer);
 
-            return Ok(new { message = "Cliente actualizado correctamente", data = customer });
+            var updatedCustomer = _customerRepository.GetById(id);
+            var responseDTO = _mapper.Map<CustomerDTO>(updatedCustomer);
+
+            return Ok(new { message = "Cliente actualizado correctamente", data = responseDTO });
         }
 
         /// <summary>
@@ -76,11 +91,11 @@ namespace ConsolePhoneStore.Controllers
         [HttpDelete("{id}")]
         public IActionResult DeleteCustomer(int id)
         {
-            var customer = customers.FirstOrDefault(c => c.Id == id && c.IsActive);
+            var customer = _customerRepository.GetById(id);
             if (customer == null)
                 return NotFound(new { message = $"Cliente con ID {id} no encontrado" });
 
-            customer.IsActive = false;
+            _customerRepository.Delete(id);
             return Ok(new { message = "Cliente eliminado correctamente" });
         }
     }
