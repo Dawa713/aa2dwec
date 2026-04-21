@@ -71,15 +71,18 @@ namespace ConsolePhoneStore.Controllers
         [HttpPut("{id}")]
         public IActionResult UpdateCustomer(int id, [FromBody] CreateUpdateCustomerDTO customerUpdateDTO)
         {
-            var customer = _customerRepository.GetById(id);
-            if (customer == null)
+            var existingCustomer = _customerRepository.GetById(id);
+            if (existingCustomer == null)
                 return NotFound(new { message = $"Cliente con ID {id} no encontrado" });
 
-            // Mapear DTO a Customer para la actualización
-            _mapper.Map(customerUpdateDTO, customer);
-            _customerRepository.Update(id, customer);
+            // Crear un nuevo objeto Customer con los datos actualizados
+            var updatedCustomer = _mapper.Map<Customer>(customerUpdateDTO);
+            updatedCustomer.Id = id; // Mantener el mismo ID
+            updatedCustomer.CreatedAt = existingCustomer.CreatedAt; // Mantener fecha de creación
+            updatedCustomer.IsActive = existingCustomer.IsActive; // Mantener estado activo
 
-            var updatedCustomer = _customerRepository.GetById(id);
+            _customerRepository.Update(id, updatedCustomer);
+
             var responseDTO = _mapper.Map<CustomerDTO>(updatedCustomer);
 
             return Ok(new { message = "Cliente actualizado correctamente", data = responseDTO });

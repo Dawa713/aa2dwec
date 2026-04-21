@@ -100,6 +100,46 @@ namespace ConsolePhoneStore.Controllers
         }
 
         /// <summary>
+        /// POST: api/phones/{id}/purchase - Compra un teléfono (reduce stock)
+        /// </summary>
+        [HttpPost("{id}/purchase")]
+        public IActionResult PurchasePhone(int id, [FromBody] PurchaseRequestDTO purchaseRequest)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var phone = _phoneRepository.GetById(id);
+            if (phone == null)
+                return NotFound(new { message = $"Teléfono con ID {id} no encontrado" });
+
+            if (!phone.IsActive)
+                return BadRequest(new { message = "El teléfono no está disponible para compra" });
+
+            try
+            {
+                // Usar el método ReduceStock del modelo Phone
+                phone.ReduceStock(purchaseRequest.Quantity);
+
+                // Actualizar el teléfono en el repositorio con el stock reducido
+                _phoneRepository.Update(id, phone);
+
+                // Mapear a DTO para la respuesta
+                var phoneDTO = _mapper.Map<PhoneDTO>(phone);
+
+                return Ok(new
+                {
+                    message = $"Compra realizada exitosamente. Stock restante: {phone.Stock}",
+                    purchasedQuantity = purchaseRequest.Quantity,
+                    phone = phoneDTO
+                });
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// GET: api/phones/search/byBrand?brand=Apple - Busca teléfonos por marca
         /// </summary>
         [HttpGet("search/byBrand")]

@@ -46,6 +46,13 @@ namespace ConsolePhoneStore.Models
             IsActive = true;
         }
 
+        /// Constructor sin parámetros requerido por AutoMapper
+        public Phone()
+        {
+            ReleaseDate = DateTime.Now;
+            IsActive = true;
+        }
+
         
         /// Reduce el stock del teléfono cuando se realiza una compra.
         /// Valida que la cantidad sea válida antes de restar.

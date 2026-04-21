@@ -48,6 +48,13 @@ namespace ConsolePhoneStore.Models
             IsActive = true;
         }
 
+        /// Constructor sin parámetros requerido por AutoMapper
+        public Customer()
+        {
+            CreatedAt = DateTime.Now;
+            IsActive = true;
+        }
+
         /// Método privado para validar el formato del email.
         /// Comprueba que contenga @ y al menos un punto (.).
         private bool EsEmailValido(string email)
