@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mariadb-config
+  namespace: tienda-api
+data:
+  # Configuración de MariaDB
+  MARIADB_DATABASE: mi_api_db
+  MARIADB_CHARSET: utf8mb4
+  MARIADB_COLLATION: utf8mb4_unicode_ci

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tienda-api
+  labels:
+    name: tienda-api
+    environment: production

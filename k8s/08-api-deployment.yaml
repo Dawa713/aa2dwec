@@ -1,0 +1,122 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-tienda
+  namespace: tienda-api
+  labels:
+    app: api-tienda
+    version: v1
+spec:
+  replicas: 2  # 2 instancias para alta disponibilidad
+  
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  
+  selector:
+    matchLabels:
+      app: api-tienda
+  
+  template:
+    metadata:
+      labels:
+        app: api-tienda
+        version: v1
+    spec:
+      # Init container para ejecutar migraciones
+      initContainers:
+      - name: db-migrate
+        # NOTA: Reemplazar con tu registry de Docker
+        image: tu-usuario/api-tienda:latest
+        imagePullPolicy: IfNotPresent
+        command:
+        - sh
+        - -c
+        - |
+          echo "Esperando a MariaDB..."
+          while ! nc -z mariadb 3306; do
+            sleep 1
+          done
+          echo "MariaDB está listo"
+          # Descomentar para ejecutar migraciones automáticamente
+          # dotnet ef database update --no-build
+        env:
+        - name: ConnectionStrings__DefaultConnection
+          valueFrom:
+            configMapKeyRef:
+              name: api-config
+              key: ConnectionStrings__DefaultConnection
+      
+      containers:
+      - name: api
+        # NOTA: Reemplazar con tu imagen real
+        image: tu-usuario/api-tienda:latest
+        imagePullPolicy: IfNotPresent
+        
+        ports:
+        - name: http
+          containerPort: 5000
+          protocol: TCP
+        - name: https
+          containerPort: 5001
+          protocol: TCP
+        
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: api-config
+              key: ASPNETCORE_ENVIRONMENT
+        - name: ASPNETCORE_URLS
+          valueFrom:
+            configMapKeyRef:
+              name: api-config
+              key: ASPNETCORE_URLS
+        - name: ConnectionStrings__DefaultConnection
+          valueFrom:
+            configMapKeyRef:
+              name: api-config
+              key: ConnectionStrings__DefaultConnection
+        
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        
+        # Readiness probe - ¿está lista para recibir tráfico?
+        readinessProbe:
+          httpGet:
+            path: /swagger/index.html
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        
+        # Liveness probe - ¿está viva?
+        livenessProbe:
+          httpGet:
+            path: /swagger/index.html
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        
+        # Startup probe - tiempo para iniciar
+        startupProbe:
+          httpGet:
+            path: /swagger/index.html
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 0
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 30

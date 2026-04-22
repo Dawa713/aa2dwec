@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-config
+  namespace: tienda-api
+data:
+  # Configuración para la API
+  ASPNETCORE_ENVIRONMENT: Production
+  ASPNETCORE_URLS: http://+:5000
+  # Connection string - referencia al servicio de MariaDB
+  ConnectionStrings__DefaultConnection: |
+    Server=mariadb;Database=mi_api_db;User=usuario;Password=password123;

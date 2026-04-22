@@ -1,0 +1,42 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Build outputs
+bin/
+obj/
+out/
+
+# IDE
+.vs/
+.vscode/
+*.swp
+*.swo
+*~
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Kubernetes
+k8s/
+
+# Documentation
+*.md
+DOCUMENTACION.md
+
+# Test
+test/
+Tests/
