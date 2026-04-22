@@ -54,7 +54,7 @@ namespace api_clase.Services
 
         public void Delete(int id)
         {
-            var customer = GetById(id);
+            var customer = _context.Customers.FirstOrDefault(c => c.Id == id);
             if (customer != null)
             {
                 customer.IsActive = false;

@@ -52,7 +52,7 @@ namespace api_clase.Services
 
         public void Delete(int id)
         {
-            var phone = GetById(id);
+            var phone = _context.Phones.FirstOrDefault(p => p.Id == id);
             if (phone != null)
             {
                 phone.IsActive = false;
