@@ -1,34 +1,41 @@
-using ConsolePhoneStore.Models;
+using api_clase.Models;
+using api_clase.Data;
 
-namespace ConsolePhoneStore.Services
+namespace api_clase.Services
 {
     /// <summary>
-    /// Implementación del repositorio de clientes en memoria.
-    /// En producción, esto sería una clase que acceda a una base de datos.
+    /// Implementación del repositorio de clientes usando Entity Framework Core.
+    /// Lee y escribe datos desde la base de datos MariaDB.
     /// </summary>
     public class CustomerRepository : ICustomerRepository
     {
-        // Almacenamiento temporal en memoria
-        private static List<Customer> customers = new()
+        private readonly ApplicationDbContext _context;
+
+        public CustomerRepository(ApplicationDbContext context)
         {
-            new Customer(1, "Juan", "juan@email.com", "password123", "ADMIN"),
-            new Customer(2, "Maria", "maria@email.com", "pass1234", "CLIENT")
-        };
+            _context = context;
+        }
 
         public IEnumerable<Customer> GetAllActive()
         {
-            return customers.Where(c => c.IsActive).ToList();
+            return _context.Customers.Where(c => c.IsActive).ToList();
         }
 
         public Customer GetById(int id)
         {
-            return customers.FirstOrDefault(c => c.Id == id && c.IsActive);
+            return _context.Customers.FirstOrDefault(c => c.Id == id && c.IsActive);
         }
 
         public void Add(Customer customer)
         {
-            customer.Id = customers.Max(c => c.Id) + 1;
-            customers.Add(customer);
+            // Asegurar que se asignen los valores por defecto si no están establecidos
+            if (customer.CreatedAt == default)
+                customer.CreatedAt = DateTime.Now;
+            if (!customer.IsActive)
+                customer.IsActive = true;
+            
+            _context.Customers.Add(customer);
+            _context.SaveChanges();
         }
 
         public void Update(int id, Customer customerUpdate)
@@ -40,6 +47,8 @@ namespace ConsolePhoneStore.Services
                 customer.Email = customerUpdate.Email ?? customer.Email;
                 customer.Password = customerUpdate.Password ?? customer.Password;
                 customer.Role = customerUpdate.Role ?? customer.Role;
+                _context.Customers.Update(customer);
+                _context.SaveChanges();
             }
         }
 
@@ -49,6 +58,8 @@ namespace ConsolePhoneStore.Services
             if (customer != null)
             {
                 customer.IsActive = false;
+                _context.Customers.Update(customer);
+                _context.SaveChanges();
             }
         }
     }

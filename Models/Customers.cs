@@ -1,56 +1,55 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
-namespace ConsolePhoneStore.Models
+namespace api_clase.Models
 {
-    
     /// Clase que representa un cliente/usuario de la tienda.
     /// Almacena la información personal y de autenticación del usuario.
+    [Table("Customers")]
     public class Customer
     {
-        // Propiedades del cliente
-        public static int nextId = 1;
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
+
+        [Required]
+        [StringLength(50)]
         public string Name { get; set; }
+
+        [Required]
+        [EmailAddress]
+        [StringLength(100)]
         public string Email { get; set; }
+
+        [Required]
+        [StringLength(255)]
         public string Password { get; set; }
+
+        [Required]
+        [StringLength(20)]
         public string Role { get; set; } // ADMIN o CLIENT
+
+        [Required]
         public DateTime CreatedAt { get; set; }
+
+        [Required]
         public bool IsActive { get; set; }
 
-      
-        /// Constructor del cliente que valida los datos de entrada.
-        /// El rol por defecto es "CLIENT" si no se especifica.
-        /// JsonConstructor permite la deserialización JSON sin constructor sin parámetros.
-       
-        [JsonConstructor]
-        public Customer(int id, string name, string email, string password, string role = "CLIENT")
+        // Constructor vacío requerido por EF Core
+        public Customer()
         {
-            id = nextId++;
-            // Validar que el nombre no esté vacío y tenga máximo 10 caracteres
-            if (string.IsNullOrWhiteSpace(name) || name.Length > 10)
-                throw new ArgumentException("El nombre es obligatorio y máximo 10 caracteres");
-
-            // Validar que el email tenga un formato válido
-            if (!EsEmailValido(email))
-                throw new ArgumentException("Email no válido");
-
-            // Validar que la contraseña tenga al menos 6 caracteres
-            if (string.IsNullOrWhiteSpace(password) || password.Length < 5)
-                throw new ArgumentException("La contraseña debe tener al menos 6 caracteres");
-
-            // Asignar los valores a las propiedades
-            Id = id;
-            Name = name;
-            Email = email;
-            Password = password;
-            Role = role;
             CreatedAt = DateTime.Now;
             IsActive = true;
         }
 
-        /// Constructor sin parámetros requerido por AutoMapper
-        public Customer()
+        // Constructor con parámetros
+        public Customer(string name, string email, string password, string role = "CLIENT")
         {
+            Name = name;
+            Email = email;
+            Password = password;
+            Role = role;
             CreatedAt = DateTime.Now;
             IsActive = true;
         }

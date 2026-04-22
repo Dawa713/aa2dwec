@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
-using ConsolePhoneStore.Models;
-using ConsolePhoneStore.Services;
-using ConsolePhoneStore.DTOs;
+using api_clase.Models;
+using api_clase.Services;
+using api_clase.DTOs;
 using AutoMapper;
 
-namespace ConsolePhoneStore.Controllers
+namespace api_clase.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -75,14 +75,11 @@ namespace ConsolePhoneStore.Controllers
             if (existingCustomer == null)
                 return NotFound(new { message = $"Cliente con ID {id} no encontrado" });
 
-            // Crear un nuevo objeto Customer con los datos actualizados
-            var updatedCustomer = _mapper.Map<Customer>(customerUpdateDTO);
-            updatedCustomer.Id = id; // Mantener el mismo ID
-            updatedCustomer.CreatedAt = existingCustomer.CreatedAt; // Mantener fecha de creación
-            updatedCustomer.IsActive = existingCustomer.IsActive; // Mantener estado activo
+            // Mapear DTO a Customer para la actualización (actualiza el objeto existente)
+            _mapper.Map(customerUpdateDTO, existingCustomer);
+            _customerRepository.Update(id, existingCustomer);
 
-            _customerRepository.Update(id, updatedCustomer);
-
+            var updatedCustomer = _customerRepository.GetById(id);
             var responseDTO = _mapper.Map<CustomerDTO>(updatedCustomer);
 
             return Ok(new { message = "Cliente actualizado correctamente", data = responseDTO });

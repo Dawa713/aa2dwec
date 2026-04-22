@@ -1,62 +1,58 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
-namespace ConsolePhoneStore.Models
+namespace api_clase.Models
 {
-   
     /// Clase que representa un teléfono móvil en el catálogo de la tienda.
     /// Contiene información sobre el producto como marca, modelo, precio y stock disponible.
-   
+    [Table("Phones")]
     public class Phone
     {
-        // Propiedades del teléfono
-        public static int nextId = 1;
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
+
+        [Required]
+        [StringLength(50)]
         public string Brand { get; set; }
+
+        [Required]
+        [StringLength(50)]
         public string Model { get; set; }
+
+        [Required]
+        [Column(TypeName = "decimal(18,2)")]
         public decimal Price { get; set; }
-        // Stock es modificable porque disminuye cuando se hacen compras
+
+        [Required]
         public int Stock { get; set; }
+
+        [Required]
         public DateTime ReleaseDate { get; set; }
+
+        [Required]
         public bool IsActive { get; set; }
 
-      
-        /// Constructor del teléfono que valida los datos de entrada.
-        /// Asegura que el precio sea positivo y el stock no sea negativo.
-        /// JsonConstructor permite la deserialización JSON sin constructor sin parámetros.
-       
-        [JsonConstructor]
-        public Phone(int id, string brand, string model, decimal price, int stock)
+        // Constructor vacío requerido por EF Core
+        public Phone()
         {
-            id = nextId++;
-            // Validar que el precio sea válido (mayor que 0)
-            if (price <= 0)
-                throw new ArgumentOutOfRangeException("El precio debe ser mayor que 0");
+            IsActive = true;
+        }
 
-            // Validar que el stock no sea negativo
-            if (stock < 0)
-                throw new ArgumentOutOfRangeException("El stock no puede ser negativo");
-
-            // Asignar los valores a las propiedades
-            Id = id;
+        // Constructor con parámetros
+        public Phone(string brand, string model, decimal price, int stock, DateTime releaseDate, bool isActive = true)
+        {
             Brand = brand;
             Model = model;
             Price = price;
             Stock = stock;
-            ReleaseDate = DateTime.Now;
-            IsActive = true;
+            ReleaseDate = releaseDate;
+            IsActive = isActive;
         }
 
-        /// Constructor sin parámetros requerido por AutoMapper
-        public Phone()
-        {
-            ReleaseDate = DateTime.Now;
-            IsActive = true;
-        }
-
-        
         /// Reduce el stock del teléfono cuando se realiza una compra.
         /// Valida que la cantidad sea válida antes de restar.
-       
         public void ReduceStock(int quantity)
         {
             if (quantity <= 0 || quantity > Stock)

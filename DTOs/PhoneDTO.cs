@@ -1,4 +1,4 @@
-namespace ConsolePhoneStore.DTOs
+namespace api_clase.DTOs
 {
     /// <summary>
     /// Data Transfer Object para Teléfono

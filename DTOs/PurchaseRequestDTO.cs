@@ -1,4 +1,4 @@
-namespace ConsolePhoneStore.DTOs
+namespace api_clase.DTOs
 {
     /// <summary>
     /// DTO para solicitudes de compra de teléfonos

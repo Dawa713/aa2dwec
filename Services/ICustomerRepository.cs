@@ -1,6 +1,6 @@
-using ConsolePhoneStore.Models;
+using api_clase.Models;
 
-namespace ConsolePhoneStore.Services
+namespace api_clase.Services
 {
     /// <summary>
     /// Interfaz que define el contrato para las operaciones de clientes.

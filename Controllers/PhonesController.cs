@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
-using ConsolePhoneStore.Models;
-using ConsolePhoneStore.Services;
-using ConsolePhoneStore.DTOs;
+using api_clase.Models;
+using api_clase.Services;
+using api_clase.DTOs;
 using AutoMapper;
 
-namespace ConsolePhoneStore.Controllers
+namespace api_clase.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]

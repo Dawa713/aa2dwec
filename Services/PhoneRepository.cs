@@ -1,35 +1,39 @@
-using ConsolePhoneStore.Models;
+using api_clase.Models;
+using api_clase.Data;
 
-namespace ConsolePhoneStore.Services
+namespace api_clase.Services
 {
     /// <summary>
-    /// Implementación del repositorio de teléfonos en memoria.
-    /// En producción, esto sería una clase que acceda a una base de datos.
+    /// Implementación del repositorio de teléfonos usando Entity Framework Core.
+    /// Lee y escribe datos desde la base de datos MariaDB.
     /// </summary>
     public class PhoneRepository : IPhoneRepository
     {
-        // Almacenamiento temporal en memoria
-        private static List<Phone> phones = new()
+        private readonly ApplicationDbContext _context;
+
+        public PhoneRepository(ApplicationDbContext context)
         {
-            new Phone(1, "Apple", "iPhone 15", 999.99m, 50),
-            new Phone(2, "Samsung", "Galaxy S24", 899.99m, 40),
-            new Phone(3, "Google", "Pixel 8", 799.99m, 30)
-        };
+            _context = context;
+        }
 
         public IEnumerable<Phone> GetAllActive()
         {
-            return phones.Where(p => p.IsActive).ToList();
+            return _context.Phones.Where(p => p.IsActive).ToList();
         }
 
         public Phone GetById(int id)
         {
-            return phones.FirstOrDefault(p => p.Id == id && p.IsActive);
+            return _context.Phones.FirstOrDefault(p => p.Id == id && p.IsActive);
         }
 
         public void Add(Phone phone)
         {
-            phone.Id = phones.Max(p => p.Id) + 1;
-            phones.Add(phone);
+            // Asegurar que se asignen los valores por defecto si no están establecidos
+            if (!phone.IsActive)
+                phone.IsActive = true;
+            
+            _context.Phones.Add(phone);
+            _context.SaveChanges();
         }
 
         public void Update(int id, Phone phoneUpdate)
@@ -41,6 +45,8 @@ namespace ConsolePhoneStore.Services
                 phone.Model = phoneUpdate.Model ?? phone.Model;
                 phone.Price = phoneUpdate.Price > 0 ? phoneUpdate.Price : phone.Price;
                 phone.Stock = phoneUpdate.Stock >= 0 ? phoneUpdate.Stock : phone.Stock;
+                _context.Phones.Update(phone);
+                _context.SaveChanges();
             }
         }
 
@@ -50,6 +56,8 @@ namespace ConsolePhoneStore.Services
             if (phone != null)
             {
                 phone.IsActive = false;
+                _context.Phones.Update(phone);
+                _context.SaveChanges();
             }
         }
     }
